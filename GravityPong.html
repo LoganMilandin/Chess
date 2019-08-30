@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="ISO-8859-1">
+	<title>Spike Pong</title>
+	<style type = "text/css">
+		#gameEnvironment {
+			display: none;
+		}
+		
+		#tutorialScreen {
+			background-color: black;
+			height: 500px;
+			margin-left: 300px;
+			margin-right: 300px;
+			display: in-line;
+			border: 5px ridge red;
+		}
+		#canvas {
+			border: 1px solid black;
+			padding: 0px;
+			margin-top: 0px;
+			
+			
+		}
+		body {
+			margin: 0px;
+		}
+		#player1 {
+			padding : 0px;
+			position: absolute;
+			margin-top: 320px;
+			margin-left: 10px;
+			background-color: 'blue';
+			font: bold 30px Impact;
+			
+		}
+		#player2 {
+			padding : 0px;
+			position: absolute;
+			margin-top: 320px;
+			margin-left: 1193px;
+			background-color: 'blue';
+			font: bold 30px Impact;
+		}
+		#gravityToggle {
+			background-color: black;
+			color: white;
+			position: absolute;
+			margin-left: 580px;
+			margin-bottom: 0px;
+			font: 20px Impact;
+			
+			
+			
+		}
+		.tutorialText {
+			color: white;
+			font: 60px Impact;
+			margin: 20px 0px 0px 90px;
+			padding: 0px;
+			
+		}
+		.key {
+			padding: 5px 10px 5px 10px;
+			background-color: gray;
+		}
+		
+		.clickToPlay {
+			position: absolute;
+			margin: 40px 0px 0px 90px;
+			background-color: #55ce33;
+			font: 20px Arial;
+			color: white;
+		}
+		
+	</style>
+</head>
+<body>
+
+	<div id = "tutorialScreen">
+		<p class = "tutorialText"> Welcome to Spike Pong</p>
+		<p class = "tutorialText" style = "font-size: 30px; margin: 0px 0px 0px 295px">How to Play </p>
+		<p class = "tutorialText" style = "font-size: 25px; margin: 20px 0px 30px 20px">Player 1: Move the paddle with <span class = "key">W</span>
+		(up) and <span class = "key" style = "padding: 5px 13px 5px 13px">S</span>(down) keys. Press <span class = "key" style = "padding: 5px 12px 5px 12px">D</span> to spike the ball. </p>
+		<p class = "tutorialText" style = "font-size: 25px; margin: 20px 0px 0px 20px">Player 2: Move the paddle with <span class = "key" style = "padding: 2px 13px 10px 13px">&#x2191</span> and 
+		<span class = "key" style = "padding: 2px 13px 10px 13px">&#x2193</span> arrow keys. 
+		Press <span class = "key" style = "padding: 3px 8px 8px 8px">&#x2190</span> to spike the ball.</p>
+		<p class = "tutorialText" style = "font-size: 25px; margin: 20px 0px 0px 20px">Rules: Players can only spike once every 5 seconds. Spikes can't be returned by another spike. The first player to reach 11 points wins the game. </p>
+		<form>
+			<input class = "clickToPlay" type = "button" value = "PLAY WITHOUT GRAVITY" onclick = "startGameWithoutGravity()"/>
+			<input class = "clickToPlay" type = "button" value = "PLAY WITH GRAVITY" style = "margin: 40px 0px 0px 450px" onclick = "startGameWithGravity()"/>
+		</form>
+	</div>
+		
+	
+	<div id = "gameEnvironment"> 
+		<h1 id = "player1">PLAYER ONE</h1>
+		<h1 id = "player2">PLAYER TWO</h1>
+		<form>
+			<input id = "gravityToggle" type = "button" value = "click to turn gravity on" onclick = "toggleGravity(); this.blur()"/input>
+		</form>
+		<canvas id = "canvas"></canvas>
+	</div>
+	
+	
+	<script src = "jqueryScript.js"></script>
+	<script type = "text/javascript">
+	
+		var canvas = document.getElementById('canvas');
+		var context = canvas.getContext('2d');
+		var gravToggle = document.getElementById('gravityToggle');
+		
+		canvas.style.marginLeft = '183px';
+		canvas.style.marginTop = '28.5px';
+		canvas.width = 1000;
+		canvas.height = 600;
+		
+		var canvasWidth = canvas.width;
+		var canvasHeight = canvas.height;
+		var marginLeft = 183;
+		var marginTop = 28.5;
+		
+		var gravityIsOn = false;
+		function toggleGravity() {
+			gravityIsOn = !gravityIsOn;
+			if (gravityIsOn) {
+				gravToggle.value = "click to turn gravity off";
+			}
+			else {
+				gravToggle.value = "click to turn gravity on";
+			}
+			
+		}
+		function startGameWithGravity() {
+			gravityIsOn = true;
+			document.getElementById('tutorialScreen').style.display = "none";
+			$('#gameEnvironment').show();
+		}
+		
+		function startGameWithoutGravity() {
+			gravityIsOn = false;
+			document.getElementById('tutorialScreen').style.display = "none";
+			$('#gameEnvironment').show();
+		}
+		
+		var Ball = function(xPos, yPos, Dx, Dy, ballRadius) {
+			this.x = xPos;
+			this.y = yPos;
+			this.dx = Dx;
+			this.dy = Dy;
+			this.radius = ballRadius;
+			this.speedBeforeSpike;
+			this.isSpikingFromLeft = false;
+			this.isSpikingFromRight = false;
+			this.draw = function() {
+				context.beginPath();
+				context.arc(this.x, this.y, this.radius, 0, 2 *Math.PI, true);
+				context.fillStyle = 'white';
+				if (this.isSpikingFromLeft || this.isSpikingFromRight) {
+					context.fillStyle = 'orange';
+				}
+				context.fill();
+			}
+			this.updatePosition = function() {
+				context.fillStyle = 'black';
+				context.fillRect(0, 0, canvas.width, canvas.height);
+				this.x += this.dx;
+				
+				//god tier line of code right here
+				this.y += this.dy;
+				if (gravityIsOn) {
+					this.dy += .5;
+				}
+				
+				
+				
+				this.draw();
+			}
+			
+			this.spike = function() {
+				this.speedBeforeSpike = this.dx;
+				this.dx *= 2;
+			}
+			
+		}
+		//PADDLE OBJECT USED FOR RIGHT PADDLE, MIGHT COMBINE BOTH INTO ONE OBJECT LATER ON USING AN EXTRA ARGUMENT
+		var Paddle = function(xPos, yPos, paddleWidth, paddleHeight) {
+			this.x = xPos;
+			this.y = yPos;
+			this.dy = 0;
+			this.dx = 0;
+			
+			this.width = paddleWidth;
+			this.height = paddleHeight;
+			this.draw = function() {
+				context.beginPath();
+				context.fillStyle = 'red';
+				context.fillRect(this.x, this.y, this.width, this.height);
+			}
+			this.updatePosition = function() {
+				if (this.y <= 0) {
+					this.dy = 0;
+					this.y += 1;
+				}
+				if (this.y + this.height >= canvasHeight) {
+					this.dy = 0;
+					this.y -= 1;
+				}
+				this.y += this.dy;
+				this.x += this.dx;
+				this.draw();
+			}
+		}
+		$(document).ready(function() {
+			var ball = new Ball(canvasWidth / 2, canvasHeight / 2, 0, 0, 10);
+			var rightPaddle = new Paddle(canvasWidth - 10, canvasHeight / 2 - 40, 10, 80);
+			var leftPaddle = new Paddle(0, canvasHeight / 2 - 40, 10, 80);
+			var frameCount = 0;
+			var frameWhenRightSpikeActivated = -200;
+			var frameWhenLeftSpikeActivated = -200;
+			var playerOneScore = 0;
+			var playerTwoScore = 0;
+			
+			$(document).keydown(function(e) {
+				switch(e.which) {
+					//include the method for starting the game with the space bar here
+					case 32:
+						if (ball.dx == 0) {
+							if (gravityIsOn) {
+								var x = Math.random();
+								if (x >= .5) {
+									ball.dx = 5;
+								}
+								else {
+									ball.dx = -5;
+								}
+							}
+							
+							else {
+								var x = Math.random();
+								var y = Math.random();
+								if (x >= .5) {
+									ball.dx = 5;
+									//console.log(ball.dx);
+									if (y >= .5) {
+										ball.dy = 5;
+									}
+									else {
+										ball.dy = -5;
+									}
+								}
+								else {
+									ball.dx = -5;
+									if (y >= .5) {
+										ball.dy = 5;
+									}
+									else {
+										ball.dy = -5;
+									}
+								}
+							}
+							
+							
+							//console.log(ball.dx);
+							//console.log(ball.dy);
+							break;
+						}
+						else {
+							break;
+						}
+						
+					case 38: //Up key
+						rightPaddle.dy = -10;
+						break;
+					case 40: //Down key
+						rightPaddle.dy = 10;
+						break;
+					case 37:
+						//SPIKE THE BALL
+						if (frameCount >= frameWhenRightSpikeActivated + 200 && !ball.isSpikingFromLeft) {
+							frameWhenRightSpikeActivated = frameCount;
+						}
+					default:
+						break;
+					//MAYBE ADD A METHOD HERE LATER FOR SLAPPING THE PADDLE FORWARD FOR A SPIKE ATTACK
+				}
+				
+			});
+			
+			$(document).keyup(function(e) {
+				switch(e.which) {
+					case 38: //Up key
+						rightPaddle.dy = 0;
+						break;
+					case 40: //Down key
+						rightPaddle.dy = 0;
+						break;
+					default:
+						break;
+					//MAYBE ADD A METHOD HERE LATER FOR SLAPPING THE PADDLE FORWARD FOR A SPIKE ATTACK
+				}
+				
+			});
+			
+			$(document).keydown(function(e) {
+
+				switch(e.which) {
+					case 87: //W key
+						leftPaddle.dy = -10;
+						break;
+					case 83: //S key
+						leftPaddle.dy = 10;
+						break;
+					case 68:
+						if (frameCount >= frameWhenLeftSpikeActivated + 200 && ball.isSpikingFromRight == false) {
+							frameWhenLeftSpikeActivated = frameCount;
+						}
+					default:
+						break;
+					//MAYBE ADD A METHOD HERE LATER FOR SLAPPING THE PADDLE FORWARD FOR A SPIKE ATTACK
+				}
+				
+				
+			});
+			
+			$(document).keyup(function(e) {
+
+				switch(e.which) {
+					case 87: //W key
+						leftPaddle.dy = 0;
+						break;
+					case 83: //S key
+						leftPaddle.dy = 0;
+						break;
+					default:
+						break;
+					//MAYBE ADD A METHOD HERE LATER FOR SLAPPING THE PADDLE FORWARD FOR A SPIKE ATTACK
+				}
+				
+				
+			});
+			
+			
+			//when the spike key is pressed, we want to change paddle.dx to 5 for 20 frames, then back to -5 for 20 more frames
+			function animate() {
+				frameCount++;
+				if (playerOneScore == 11) {
+					context.fillText(playerOneScore, 30, 60);
+					alert('player one wins!');
+				}
+				if (playerTwoScore == 11) {
+					context.fillText(playerTwoScore, canvas.width - 77, 60);
+					alert('player two wins!');
+				}
+				requestAnimationFrame(animate);
+				
+				
+				//if we hit the right paddle 
+				if (hitRightPaddle() && !rightPaddleIsSpiking()) {
+						//if we're returning a spike from the left
+						if (ball.isSpikingFromLeft) {
+							ball.dx = -ball.speedBeforeSpike;
+							ball.isSpikingFromLeft = false;
+						}
+						//////////////////////////////////////////
+				
+	
+						//console.log("right paddle hitting " + ball.dx);
+						ball.x -= 5;
+						ball.dx *= -1;
+						ball.dx --; 
+				}
+				//if we are currently spiking the paddle
+				if (rightPaddleIsSpiking()) {
+					if (hitRightPaddle()) {
+						ball.spike();
+						ball.x -= 5;
+						ball.dx *= -1;
+						ball.dx --;
+						ball.isSpikingFromRight = true;
+					}
+					//console.log("right spiking");
+					rightPaddle.dx = -5;
+				}
+				else if (frameCount <= frameWhenRightSpikeActivated + 20) {
+					rightPaddle.dx = 5;
+				}
+				else {
+					rightPaddle.dx = 0;
+				}
+				////////////////////////////////////
+				
+				
+				
+				//if we hit the left paddle
+				if (hitLeftPaddle() && !leftPaddleIsSpiking()){
+					
+					//if we're returning a psike from the right
+					if (ball.isSpikingFromRight) {
+						ball.dx = -ball.speedBeforeSpike;
+						ball.isSpikingFromRight = false;
+					}
+					/////////////////////////////////
+					console.log("left paddle hitting " + ball.dx);
+					ball.x += 5;
+					ball.dx *= -1;	
+					ball.dx ++;
+
+				}
+				
+				//if we are currently spiking the paddle
+				if (leftPaddleIsSpiking()) {
+					if (hitLeftPaddle()) {
+						ball.spike();
+						ball.x += 5;
+						ball.dx *= -1;	
+						ball.dx ++;
+						ball.isSpikingFromLeft = true;
+					}
+					//console.log("left spiking");
+					leftPaddle.dx = 5;
+				}
+				else if (frameCount <= frameWhenLeftSpikeActivated + 20) {
+					leftPaddle.dx = -5;
+				}
+				else {
+					leftPaddle.dx = 0;
+				}
+				///////////////////////////////
+					
+					
+
+				
+				//test if the ball is past the edge of the screen
+				if (isPastEdgeOfScreen()) {
+					
+					if (ball.x + ball.radius >= canvasWidth) {
+						playerOneScore++;
+					}
+					else {
+						playerTwoScore++;
+					}
+					ball.x = canvasWidth / 2;
+					ball.y = canvasHeight / 2;
+					ball.dx = 0;
+					ball.dy = 0;
+					ball.isSpikingFromLeft = false;
+					ball.isSpikingFromRight = false;
+				}
+				/////////////////////////////////
+				
+				
+				
+				
+				
+				
+				//ball.dy = 0;
+				ball.updatePosition();
+				rightPaddle.updatePosition();
+				leftPaddle.updatePosition();
+				
+				
+				context.fillStyle = 'white';
+				context.font = '50px Impact';
+				context.fillText(playerOneScore, 30, 60);
+				
+				if (playerTwoScore < 10) {
+					context.fillText(playerTwoScore, canvas.width - 55, 60);
+				}
+				else {
+					context.fillText(playerTwoScore, canvas.width - 77, 60);
+				}
+	
+				
+				
+				
+				
+				if (ball.y + ball.radius >= canvasHeight || ball.y - ball.radius <= 0) {
+					//magic line of code to make the ball get to the same height every time(ONLY USED IN GRAVITY PONG)
+					if (gravityIsOn) {
+						ball.dy -= .5;
+					}
+					
+					
+					
+					ball.dy *= -1;
+					
+				}
+
+			}
+			animate();
+			
+			function hitLeftPaddle() {
+				//if the y position of the ball is correct
+				if (ball.y <= leftPaddle.y + leftPaddle.height && ball.y >= leftPaddle.y) {
+					
+					//if the ball position is past the edge of the paddle AND it wasnt past the edge of the paddle in the previous frame
+					if (ball.x - ball.radius <= leftPaddle.x + leftPaddle.width && 
+						(ball.x - ball.radius + Math.abs(ball.dx) >= leftPaddle.x + leftPaddle.width - Math.abs(leftPaddle.dx))) {
+						return true;
+					}
+					
+
+				}
+				
+				return false;
+			}
+			
+			function hitRightPaddle() {
+				if (ball.y <= rightPaddle.y + rightPaddle.height && ball.y >= rightPaddle.y) {
+					if (ball.x + ball.radius >= rightPaddle.x &&
+					(ball.x + ball.radius - Math.abs(ball.dx) <= rightPaddle.x + rightPaddle.width + Math.abs(rightPaddle.dx))) {
+						return true;
+					}
+				}
+				
+				return false;
+			}
+			
+			function isPastEdgeOfScreen() {
+				if (ball.x + ball.radius >= canvasWidth + 3 * Math.abs(ball.dx) || ball.x - ball.radius <= -3 * Math.abs(ball.dx)) {
+					return true;
+				}
+				return false;
+			}
+			
+			function leftPaddleIsSpiking() {
+				//console.log("frame: " + frameCount);
+				//console.log("frame when left activated spike: " + frameWhenLeftSpikeActivated);
+				if (frameCount <= frameWhenLeftSpikeActivated + 10) {
+					return true;
+				}
+				return false;
+			}
+			function rightPaddleIsSpiking() {
+				
+				//console.log('frame: ' + frameCount);
+				//console.log('frame when right activated spike: '+ frameWhenRightSpikeActivated);
+				if (frameCount <= frameWhenRightSpikeActivated + 10) {
+					return true;
+				}
+				return false;
+			}
+		});
+		
+
+		
+		
+		
+	</script>
+</body>
+</html>
