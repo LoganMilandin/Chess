@@ -1,0 +1,16 @@
+@charset "ISO-8859-1";
+
+#canvasWrapper{
+	background-color: transparent;
+	border: 5px ridge black;
+	position: absolute;
+	height: 95%;
+	width: 45.7%;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	
+}
+#gameCanvas{
+	background-color: blue;
+}
