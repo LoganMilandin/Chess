@@ -134,6 +134,7 @@ class Knight extends Piece{
 				}
 			}
 		})
+		this.availableMoves.push([this.x, this.y]);
 	}
 }
 
@@ -200,75 +201,26 @@ class Rook extends Piece{
         this.y * BOARD_WIDTH / 8 + BOARD_WIDTH / 32, BOARD_WIDTH / 32, BOARD_WIDTH / 32);
     }
     findAvailableMoves() {
-        let squaresToCheck1 = [[this.x + 1, this.y],
-                              [this.x + 2, this.y],
-                              [this.x + 3, this.y],
-                              [this.x + 4, this.y],
-                              [this.x + 5, this.y],
-                              [this.x + 6, this.y],
-                              [this.x + 7, this.y]];
-        let squaresToCheck2 = [[this.x - 1, this.y],
-                              [this.x - 2, this.y],
-                              [this.x - 3, this.y],
-                              [this.x - 4, this.y],
-                              [this.x - 5, this.y],
-                              [this.x - 6, this.y],
-                              [this.x - 7, this.y]];
-        let squaresToCheck3 = [[this.x, this.y + 1],
-                              [this.x, this.y + 2],
-                              [this.x, this.y + 3],
-                              [this.x, this.y + 4],
-                              [this.x, this.y + 5],
-                              [this.x, this.y + 6],
-                              [this.x, this.y + 7]];
-        let squaresToCheck4 = [[this.x, this.y - 1],
-                              [this.x, this.y - 2],
-                              [this.x, this.y - 3],
-                              [this.x, this.y - 4],
-                              [this.x, this.y - 5],
-                              [this.x, this.y - 6],
-                              [this.x, this.y - 7]];
-        var blocked = false;
-        squaresToCheck1.forEach(square => {
-            if (square[0] > -1 && square[0] < 8 && square[1] > -1 && square[1] < 8 && !blocked) {
-                if (squares[square[0]][square[1]].isOccupied()) {
-                    if (squares[square[0]][square[1]].piece.team != this.team) {
-                        this.availableMoves.push(square);
-                    }
-                    blocked = true;
-                } else {
-                    this.availableMoves.push(square);
-                }
-            }
-        })
-        blocked = false;
-        squaresToCheck2.forEach(square => {
-            if (square[0] > -1 && square[0] < 8 && square[1] > -1 && square[1] < 8 && !blocked) {
-                if (squares[square[0]][square[1]].isOccupied()) {
-                    if (squares[square[0]][square[1]].piece.team != this.team) {
-                        this.availableMoves.push(square);
-                    }
-                    blocked = true;
-                } else {
-                    this.availableMoves.push(square);
-                }
-            }
-        })
-        blocked = false;
-        squaresToCheck3.forEach(square => {
-            if (square[0] > -1 && square[0] < 8 && square[1] > -1 && square[1] < 8 && !blocked) {
-                if (squares[square[0]][square[1]].isOccupied()) {
-                    if (squares[square[0]][square[1]].piece.team != this.team) {
-                        this.availableMoves.push(square);
-                    }
-                    blocked = true;
-                } else {
-                    this.availableMoves.push(square);
-                }
-            }
-        })
-        blocked = false;
-        squaresToCheck4.forEach(square => {
+        let squaresToCheck = [];
+        let squaresToCheck1 = [];
+        let squaresToCheck2 = [];
+        let squaresToCheck3 = [];
+        let squaresToCheck4 = [];
+        for (var i = 1; i < 8; i++) {
+            squaresToCheck1.push([this.x + i, this.y]);
+            squaresToCheck2.push([this.x - i, this.y]);
+            squaresToCheck3.push([this.x, this.y + i]);
+            squaresToCheck4.push([this.x, this.y - i]);
+        }
+
+        this.rookHelper(false, squaresToCheck1);
+        this.rookHelper(false, squaresToCheck2);
+        this.rookHelper(false, squaresToCheck3);
+        this.rookHelper(false, squaresToCheck4);
+    }
+
+    rookHelper(blocked, squares1) {
+        squares1.forEach(square => {
             if (square[0] > -1 && square[0] < 8 && square[1] > -1 && square[1] < 8 && !blocked) {
                 if (squares[square[0]][square[1]].isOccupied()) {
                     if (squares[square[0]][square[1]].piece.team != this.team) {
