@@ -23,28 +23,20 @@ class Piece {
 		var canMoveTo = false;
 		this.availableMoves.forEach(indexPair => {
 			if (indexPair[0] == x && indexPair[1] == y) {
-				console.log("return true");
 				canMoveTo = true;
 			}
 		});
 		return canMoveTo;
 	}
 	drawAvailableMoves() {
-		context.fillStyle = '#c7f5a6';
+		context.fillStyle = 'rgba(40, 200, 0, .4)';
 		this.availableMoves.forEach(indexPair => {
-			//console.log(indexPair);
 			if (!(indexPair[0] == this.x && indexPair[1] == this.y)) {
 				context.fillRect(indexPair[0] * BOARD_WIDTH / 8, indexPair[1] * BOARD_WIDTH / 8, BOARD_WIDTH / 8, BOARD_WIDTH / 8);
 			}
 		});
 	}
-	draw() {
-		if (this.team == 1) {
-			context.fillStyle = 'blue';
-		}
-		else {
-			context.fillStyle = 'red';
-		}
+	draw(imageSource) {
 		if (this.isClicked) {
 			var boardWidth = window.innerHeight * .8;
 			var leftEdgeOfBoard = window.innerWidth / 2 - boardWidth / 2;
@@ -53,12 +45,15 @@ class Piece {
 			var bottomOfBoard = window.innerHeight / 2 + boardWidth / 2;
 			var xVal = (mouse.x - leftEdgeOfBoard) / boardWidth * 8;
 			var yVal = (mouse.y - topOfBoard) / boardWidth * 8;
-			//console.log(xVal);
-			
-			context.fillRect(xVal * BOARD_WIDTH / 8 - BOARD_WIDTH / 32, yVal * BOARD_WIDTH / 8 - BOARD_WIDTH / 32, BOARD_WIDTH / 16, BOARD_WIDTH / 16);
+			var drawing = new Image();
+			drawing.src = imageSource;
+			context.drawImage(drawing, xVal * BOARD_WIDTH / 8 - BOARD_WIDTH * 3 / 64, yVal * BOARD_WIDTH / 8 - BOARD_WIDTH * 3 / 64, BOARD_WIDTH * 3 / 32, BOARD_WIDTH * 3 / 32);
+
 		}
 		else {
-			context.fillRect(this.x * BOARD_WIDTH / 8 + BOARD_WIDTH / 32, this.y * BOARD_WIDTH / 8 + BOARD_WIDTH / 32, BOARD_WIDTH / 16, BOARD_WIDTH / 16);
+			var drawing = new Image();
+			drawing.src = imageSource;
+			context.drawImage(drawing, this.x * BOARD_WIDTH / 8 + BOARD_WIDTH / 64, this.y * BOARD_WIDTH / 8 + BOARD_WIDTH / 64, BOARD_WIDTH * 3 / 32, BOARD_WIDTH * 3 / 32);
 		}
 	}
 }
@@ -69,6 +64,9 @@ class Square {
 	}
 	isOccupied() {
 		return this.piece != null;
+	}
+	draw() {
+		super.draw()
 	}
 	
 }
@@ -82,11 +80,27 @@ class Bishop extends Piece{
 	constructor(x, y, team, type) {
 		super(x, y, team, type);
 	}
+	draw() {
+		if (this.team == 1) {
+			super.draw('blackBishop.png');
+		}
+		else {
+			super.draw('whiteBishop.png');
+		}
+	}
 }
 
 class King extends Piece{
 	constructor(x, y, team, type) {
 		super(x, y, team, type);
+	}
+	draw() {
+		if (this.team == 1) {
+			super.draw('blackKing.png');
+		}
+		else {
+			super.draw('whiteKing.png');
+		}
 	}
 }
 
@@ -116,6 +130,15 @@ class Knight extends Piece{
 				}
 			}
 		})
+		this.availableMoves.push([this.x, this.y]);
+	}
+	draw() {
+		if (this.team == 1) {
+			super.draw('blackKnight.png');
+		}
+		else {
+			super.draw('whiteKnight.png');
+		}
 	}
 }
 
@@ -157,10 +180,26 @@ class Pawn extends Piece{
 		}
 		this.availableMoves.push([this.x, this.y]);
 	}
+	draw() {
+		if (this.team == 1) {
+			super.draw('blackPawn.png');
+		}
+		else {
+			super.draw('whitePawn.png');
+		}
+	}
 }
 class Queen extends Piece {
 	constructor(x, y, team, type) {
 		super(x, y, team, type);
+	}
+	draw() {
+		if (this.team == 1) {
+			super.draw('blackQueen.png');
+		}
+		else {
+			super.draw('whiteQueen.png');
+		}
 	}
 	
 }
@@ -168,6 +207,14 @@ class Queen extends Piece {
 class Rook extends Piece{
 	constructor(x, y, team, type) {
 		super(x, y, team, type);
+	}
+	draw() {
+		if (this.team == 1) {
+			super.draw('blackRook.png');
+		}
+		else {
+			super.draw('whiteRook.png');
+		}
 	}
 	
 }
@@ -195,23 +242,17 @@ canvas.addEventListener('click', event => {
 	var indices = findClickedSquareIndices(currentX, currentY);
 	var clickedSquare = squares[indices[0]][indices[1]];
 	if (mouse.hasPiece) {
-		console.log(clickedSquare.piece == null);
-		console.log(mouse.piece.canMoveTo(indices[0], indices[1]));
 		if ((clickedSquare.piece == null || clickedSquare.piece.team != mouse.piece.team) && mouse.piece.canMoveTo(indices[0], indices[1])) {
-			console.log("working");
 			if (indices[0] == mouse.piece.startingX && indices[1] == mouse.piece.startingY && mouse.piece.hasMoved == false) {
 				mouse.piece.hasMoved = false;
 			}
 			else {
 				mouse.piece.hasMoved = true;
 			}
-			//console.log(mouse.piece.hasMoved);
 			mouse.piece.x = indices[0];
 			mouse.piece.y = indices[1];
 			if (clickedSquare.piece != null) {
-				console.log(pieces.indexOf(clickedSquare.piece));
 				deadPieces.push(pieces.splice(pieces.indexOf(clickedSquare.piece), 1));
-				console.log(deadPieces);
 			}
 			clickedSquare.piece = mouse.piece;
 			clickedSquare.piece.isClicked = false;
@@ -274,7 +315,7 @@ function findClickedSquareIndices(currentX, currentY) {
 
 //GAME INITIALIZATION/////////////////////////////////
 function drawBoard() {
-	context.fillStyle = "#000";
+	context.fillStyle = "#252525";
 	context.fillRect(0, 0, BOARD_WIDTH, BOARD_WIDTH);
 	context.fillStyle = '#fff';
 	for(i = 0; i < 4; i++) {
@@ -338,7 +379,7 @@ function drawFrame() {
 	if (mouse.hasPiece) {
 		mouse.piece.drawAvailableMoves();
 	}
-	pieces.forEach(piece => piece.draw());
+	pieces.forEach(piece => piece.draw("Chess_ndt60.png"));
 }
 
 function startGame() {
@@ -353,7 +394,6 @@ function startGame() {
 function animate() {
 	requestAnimationFrame(animate);
 	drawFrame();
-	//console.log(b1.isClicked + "   " + mouse.hasPiece + "    " + mouse.piece + "    " + squares[0][0].piece);
 }
 
 $(document).ready(function() {
