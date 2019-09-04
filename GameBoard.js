@@ -88,6 +88,38 @@ class Bishop extends Piece{
         context.fillRect(this.x * BOARD_WIDTH / 8 + BOARD_WIDTH / 32 ,
         this.y * BOARD_WIDTH / 8 + BOARD_WIDTH / 32, BOARD_WIDTH / 32, BOARD_WIDTH / 32);
 	}
+    findAvailableMoves() {
+        let squaresToCheck1 = [];
+        let squaresToCheck2 = [];
+        let squaresToCheck3 = [];
+        let squaresToCheck4 = [];
+        for (var i = 1; i < 8; i++) {
+            squaresToCheck1.push([this.x + i, this.y + i]);
+            squaresToCheck2.push([this.x - i, this.y - i]);
+            squaresToCheck3.push([this.x - i, this.y + i]);
+            squaresToCheck4.push([this.x + i, this.y - i]);
+        }
+
+        this.bishHelper(false, squaresToCheck1);
+        this.bishHelper(false, squaresToCheck2);
+        this.bishHelper(false, squaresToCheck3);
+        this.bishHelper(false, squaresToCheck4);
+        this.availableMoves.push([this.x, this.y]);
+    }
+    bishHelper(blocked, squares1) {
+        squares1.forEach(square => {
+            if (square[0] > -1 && square[0] < 8 && square[1] > -1 && square[1] < 8 && !blocked) {
+                if (squares[square[0]][square[1]].isOccupied()) {
+                    if (squares[square[0]][square[1]].piece.team != this.team) {
+                        this.availableMoves.push(square);
+                    }
+                    blocked = true;
+                } else {
+                    this.availableMoves.push(square);
+                }
+            }
+        })
+    }
 }
 
 class King extends Piece{
@@ -187,6 +219,52 @@ class Queen extends Piece {
         context.fillRect(this.x * BOARD_WIDTH / 8 + BOARD_WIDTH / 32 ,
         this.y * BOARD_WIDTH / 8 + BOARD_WIDTH / 32, BOARD_WIDTH / 32, BOARD_WIDTH / 32);
     }
+    findAvailableMoves() {
+        let squaresToCheck1 = [];
+        let squaresToCheck2 = [];
+        let squaresToCheck3 = [];
+        let squaresToCheck4 = [];
+        let squaresToCheck5 = [];
+        let squaresToCheck6 = [];
+        let squaresToCheck7 = [];
+        let squaresToCheck8 = [];
+        for (var i = 1; i < 8; i++) {
+            squaresToCheck1.push([this.x + i, this.y + i]);
+            squaresToCheck2.push([this.x - i, this.y - i]);
+            squaresToCheck3.push([this.x - i, this.y + i]);
+            squaresToCheck4.push([this.x + i, this.y - i]);
+            squaresToCheck5.push([this.x + i, this.y]);
+            squaresToCheck6.push([this.x - i, this.y]);
+            squaresToCheck7.push([this.x, this.y + i]);
+            squaresToCheck8.push([this.x, this.y - i]);
+
+        }
+
+        this.queenHelper(false, squaresToCheck1);
+        this.queenHelper(false, squaresToCheck2);
+        this.queenHelper(false, squaresToCheck3);
+        this.queenHelper(false, squaresToCheck4);
+        this.queenHelper(false, squaresToCheck5);
+        this.queenHelper(false, squaresToCheck6);
+        this.queenHelper(false, squaresToCheck7);
+        this.queenHelper(false, squaresToCheck8);
+        this.availableMoves.push([this.x, this.y]);
+    }
+
+    queenHelper(blocked, squares1) {
+        squares1.forEach(square => {
+            if (square[0] > -1 && square[0] < 8 && square[1] > -1 && square[1] < 8 && !blocked) {
+                if (squares[square[0]][square[1]].isOccupied()) {
+                    if (squares[square[0]][square[1]].piece.team != this.team) {
+                        this.availableMoves.push(square);
+                    }
+                    blocked = true;
+                } else {
+                    this.availableMoves.push(square);
+                }
+            }
+        })
+    }
 	
 }
 
@@ -201,7 +279,6 @@ class Rook extends Piece{
         this.y * BOARD_WIDTH / 8 + BOARD_WIDTH / 32, BOARD_WIDTH / 32, BOARD_WIDTH / 32);
     }
     findAvailableMoves() {
-        let squaresToCheck = [];
         let squaresToCheck1 = [];
         let squaresToCheck2 = [];
         let squaresToCheck3 = [];
