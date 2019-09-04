@@ -94,6 +94,29 @@ class Knight extends Piece{
 	constructor(x, y, team, type) {
 		super(x, y, team, type);
 	}
+	findAvailableMoves() {
+		let squaresToCheck = [[this.x + 2, this.y + 1],
+							  [this.x + 2, this.y - 1],
+							  [this.x + 1, this.y + 2],
+							  [this.x + 1, this.y - 2],
+							  [this.x - 2, this.y + 1],
+							  [this.x - 2, this.y - 1],
+							  [this.x - 1, this.y + 2],
+							  [this.x - 1, this.y - 2]
+		];
+		squaresToCheck.forEach(square => {
+			if (square[0] > -1 && square[0] < 8 && square[1] > -1 && square[1] < 8) {
+				if (squares[square[0]][square[1]].isOccupied()) {
+
+					if (squares[square[0]][square[1]].piece.team != this.team) {
+						this.availableMoves.push(square);
+					}
+				} else {
+					this.availableMoves.push(square);
+				}
+			}
+		})
+	}
 }
 
 class Pawn extends Piece{
@@ -309,6 +332,7 @@ function initializeSquares() {
 	});
 	return squares;
 }
+
 function drawFrame() {
 	drawBoard();
 	if (mouse.hasPiece) {
@@ -316,15 +340,12 @@ function drawFrame() {
 	}
 	pieces.forEach(piece => piece.draw());
 }
+
 function startGame() {
 	pieces = initializePieces();
 	squares = initializeSquares();
 	pieces.forEach(thisPiece => {
 		squares[thisPiece.x][thisPiece.y].piece = thisPiece;
-	});
-	squares.forEach(s => {
-		s.forEach(a => {
-		});
 	});
 	//begin animation loop here
 	animate();
@@ -338,4 +359,3 @@ function animate() {
 $(document).ready(function() {
 	startGame();
 });
-
