@@ -65,9 +65,6 @@ class Square {
 	isOccupied() {
 		return this.piece != null;
 	}
-	draw() {
-		super.draw()
-	}
 	
 }
 
