@@ -3,8 +3,9 @@ let canvas = document.getElementById('gameCanvas');
 let context = canvas.getContext('2d');
 const BOARD_WIDTH = canvas.width;
 let squares; //USE [column][row] INDEXING TO ACCESS ARRAY SQUARES
-let pieces;
 let deadPieces = [];
+let pieces;
+let pieceDict; 
 
 //SUPERCLASS DECLARATIONS/////////////////////////
 class Piece {
@@ -59,74 +60,13 @@ class Piece {
 }
 
 class Square {
-	constructor(x, y) {
+	constructor() {
 		this.piece = null;
-		this.x = x;
-		this.y = y;
 	}
 	isOccupied() {
 		return this.piece != null;
 	}
-	isThreatened(team) {
-		function checkLane(square, direction, team) {
-			if (square.isOccupied()) {
-				if (direction < 4) {
-					if ((square.piece.type === 'rook' || square.piece.type === 'queen') && square.piece.team != team) {
-						console.log(team);
-						console.log(square.x + ', ' + square.y + ': ' + square.piece.team + square.piece.type);
-						return false;
-					}
-				} else {
-					if ((square.piece.type === 'bishop' || square.piece.type === 'queen') && square.piece.team != team) {
-						console.log(team);
-						console.log('X, ' + square.piece.team + square.piece.type);
-						return false;
-					}
-				}
-				return true;
-			}
-			switch (direction) {
-				case 0:
-				case 4:
-				case 7:
-					if (square.y < 1)
-						return true;
-				case 1:
-				case 4:
-				case 5:
-					if (square.x > 6)
-						return true;
-				case 2:
-				case 5:
-				case 6:
-					if (square.y > 6)
-						return true;
-				case 3:
-				case 6:
-				case 7:
-					if (square.x < 1)
-						return true;
-			}
-			switch (direction) {
-				case 0: return checkLane(squares[square.x][square.y - 1], direction, team);
-				case 1: return checkLane(squares[square.x + 1][square.y], direction, team);
-				case 2: return checkLane(squares[square.x][square.y + 1], direction, team);
-				case 3: return checkLane(squares[square.x - 1][square.y], direction, team);
-				case 4: return checkLane(squares[square.x + 1][square.y - 1], direction, team);
-				case 5: return checkLane(squares[square.x + 1][square.y + 1], direction, team);
-				case 6: return checkLane(squares[square.x - 1][square.y + 1], direction, team);
-				case 7: return checkLane(squares[square.x - 1][square.y - 1], direction, team);
-			}
-		}
-		for (let i = 0; i < 8; i++) {
-			if(!checkLane(squares[this.x][this.y], i, team)) {
-				return true;
-			}
-		}
-		return false;
-	}
 }
-
 
 
 
@@ -156,27 +96,27 @@ class Bishop extends Piece{
             squaresToCheck4.push([this.x + i, this.y - i]);
         }
 
-        this.bishHelper(false, squaresToCheck1);
-        this.bishHelper(false, squaresToCheck2);
-        this.bishHelper(false, squaresToCheck3);
-        this.bishHelper(false, squaresToCheck4);
+        this.bishHelper(squaresToCheck1);
+        this.bishHelper(squaresToCheck2);
+        this.bishHelper(squaresToCheck3);
+        this.bishHelper(squaresToCheck4);
         this.availableMoves.push([this.x, this.y]);
+		return this.availableMoves;
     }
-    bishHelper(blocked, squares1) {
-        squares1.forEach(square => {
-            if (square[0] > -1 && square[0] < 8 && square[1] > -1 && square[1] < 8 && !blocked) {
-                if (squares[square[0]][square[1]].isOccupied()) {
-                    if (squares[square[0]][square[1]].piece.team != this.team) {
-                        this.availableMoves.push(square);
+    bishHelper(squares1) {
+		for (let i = 0; i < squares1.length; i++) {
+			if (squares1[i][0] > -1 && squares1[i][0] < 8 && squares1[i][1] > -1 && squares1[i][1] < 8) {
+                if (squares[squares1[i][0]][squares1[i][1]].isOccupied()) {
+                    if (squares[squares1[i][0]][squares1[i][1]].piece.team != this.team) {
+                        this.availableMoves.push(squares1[i]);
                     }
-                    blocked = true;
+					break;
                 } else {
-                    this.availableMoves.push(square);
+                    this.availableMoves.push(squares1[i]);
                 }
             }
-        })
+		}
     }
-    
 }
 
 class King extends Piece{
@@ -192,7 +132,6 @@ class King extends Piece{
 		}
 	}
 	findAvailableMoves() {
-		console.log('\n\nchecking for King moves...');
 		this.availableMoves.push([[this.x], [this.y]]);
 		let squaresToCheck = [
 			[this.x, this.y - 1],
@@ -205,19 +144,114 @@ class King extends Piece{
 			[this.x - 1, this.y - 1],
 			
 		];
-		squaresToCheck.forEach((square) => {
-			if (square[0] < 0 || square[1] < 0 || square[0] > 7 || square[1] > 7) {
-				console.log('dne');
-				return;
-			}else if (squares[square[0]][square[1]].isOccupied()) {
-				console.log('full');
-				return;
-			} else if (!squares[square[0]][square[1]].isThreatened(this.team)) {
-				console.log('safe');
-				this.availableMoves.push(square);
+		squaresToCheck.forEach(square => {
+			if (square[0] > -1 && square[0] < 8 && square[1] > -1 && square[1] < 8) {
+				let mySquare = squares[square[0]][square[1]];
+				if ((mySquare.isOccupied() && mySquare.piece.team != this.team && this.noThreat(square, this.team)) 
+					|| (!mySquare.isOccupied()) && this.noThreat(square, this.team)) {
+					this.availableMoves.push(square);
+				}
 			}
-		});
+		})
+	}
+	noThreat(square, team) {
+		return (!this.pawnThreat(square, team) && !this.rookThreat(square, team) && !this.knightThreat(square, team)
+				&& !this.bishopThreat(square, team) && !this.queenThreat(square, team) && !this.kingThreat(square, team));
+	}
+	pawnThreat(square, team) {
+		if (team === -1) {
+			if (square[0] - 1 > -1 && square[1] - 1 > -1) {
+				let pawnSquare = squares[square[0]-1][square[1]-1];
+				if (pawnSquare.piece != null) {
+					if (pawnSquare.piece.type === "pawn" && pawnSquare.piece.team === 1) {
+						return true;
+					}
+				}
+			}
+			if (square[0] + 1 < 8 && square[1] - 1 > -1) {
+				let pawnSquare = squares[square[0]+1][square[1]-1];
+				if (pawnSquare.piece != null) {
+					if (pawnSquare.piece.type === "pawn" && pawnSquare.piece.team === 1) {
+						return true;
+					}
+				}
+			}
+		} else {
+			if (square[0] - 1 > -1 && square[1] + 1 < 8) {
+				let pawnSquare = squares[square[0]-1][square[1]+1];
+				if (pawnSquare.piece != null) {
+					if (pawnSquare.piece.type === "pawn" && pawnSquare.piece.team === -1) {
+						return true;
+					}
+				}
+			}
+			if (square[0] + 1 < 8 && square[1] + 1 < 8) {
+				let pawnSquare = squares[square[0]+1][square[1]+1];
+				if (pawnSquare.piece != null) {
+					if (pawnSquare.piece.type === "pawn" && pawnSquare.piece.team === -1) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+	
+	rookThreat(square, team) {
+		return this.threatHelper(square, team, 'rook');
+	}
+	
+	knightThreat(square, team) {
+		return this.threatHelper(square, team, 'knight');
+	}
+	
+	bishopThreat(square, team) {
+		return this.threatHelper(square, team, 'bishop');
+	}
+	
+	queenThreat(square, team) {
+		return this.threatHelper(square, team, 'queen');
+	}
+	kingThreat(square, team) {
+		let squaresToCheck = [
+			[square[0], square[1] - 1],
+			[square[0] + 1, square[1] - 1],
+			[square[0] + 1, square[1]],
+			[square[0] + 1, square[1] + 1],
+			[square[0], square[1] + 1],
+			[square[0] - 1, square[1] + 1],
+			[square[0] - 1, square[1]],
+			[square[0] - 1, square[1] - 1],
+		];
 		
+		for(let i = 0; i < squaresToCheck.length; i++) {
+			if (squaresToCheck[i][0] > -1 && squaresToCheck[i][0] < 8 && 
+				squaresToCheck[i][1] > -1 && squaresToCheck[i][1] < 8) {
+				let mySquare = squares[squaresToCheck[i][0]][squaresToCheck[i][1]];
+				if (mySquare.isOccupied()) {
+					if (mySquare.piece.type === 'king' && mySquare.piece.team != team) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+	
+	threatHelper(square, team, pieceType) {
+		let threat = false;
+		pieces.forEach(piece => {
+			if (!threat && piece.type == pieceType && piece.team != team) {
+				let coveredSquares = piece.findAvailableMoves();
+				coveredSquares.forEach(coveredSquare => {
+					if (coveredSquare[0] === square[0] && coveredSquare[1] === square[1] &&
+						!squares[coveredSquare[0]][coveredSquare[1]].isOccupied()) {
+						threat = true;
+					}
+				})
+			}
+		})
+		return threat;
 	}
 }
 
@@ -248,6 +282,7 @@ class Knight extends Piece{
 			}
 		})
 		this.availableMoves.push([this.x, this.y]);
+		return this.availableMoves;
 	}
 	draw() {
 		if (this.team == 1) {
@@ -339,29 +374,30 @@ class Queen extends Piece {
 
         }
 
-        this.queenHelper(false, squaresToCheck1);
-        this.queenHelper(false, squaresToCheck2);
-        this.queenHelper(false, squaresToCheck3);
-        this.queenHelper(false, squaresToCheck4);
-        this.queenHelper(false, squaresToCheck5);
-        this.queenHelper(false, squaresToCheck6);
-        this.queenHelper(false, squaresToCheck7);
-        this.queenHelper(false, squaresToCheck8);
+        this.queenHelper(squaresToCheck1);
+        this.queenHelper(squaresToCheck2);
+        this.queenHelper(squaresToCheck3);
+        this.queenHelper(squaresToCheck4);
+        this.queenHelper(squaresToCheck5);
+        this.queenHelper(squaresToCheck6);
+        this.queenHelper(squaresToCheck7);
+        this.queenHelper(squaresToCheck8);
         this.availableMoves.push([this.x, this.y]);
+		return this.availableMoves;
     }
-    queenHelper(blocked, squares1) {
-        squares1.forEach(square => {
-            if (square[0] > -1 && square[0] < 8 && square[1] > -1 && square[1] < 8 && !blocked) {
-                if (squares[square[0]][square[1]].isOccupied()) {
-                    if (squares[square[0]][square[1]].piece.team != this.team) {
-                        this.availableMoves.push(square);
+    queenHelper(squares1) {
+        for (let i = 0; i < squares1.length; i++) {
+			if (squares1[i][0] > -1 && squares1[i][0] < 8 && squares1[i][1] > -1 && squares1[i][1] < 8) {
+                if (squares[squares1[i][0]][squares1[i][1]].isOccupied()) {
+                    if (squares[squares1[i][0]][squares1[i][1]].piece.team != this.team) {
+                        this.availableMoves.push(squares1[i]);
                     }
-                    blocked = true;
+					break;
                 } else {
-                    this.availableMoves.push(square);
+                    this.availableMoves.push(squares1[i]);
                 }
             }
-        })
+		}
     }
 	
 }
@@ -395,6 +431,7 @@ class Rook extends Piece{
         this.rookHelper(false, squaresToCheck3);
         this.rookHelper(false, squaresToCheck4);
         this.availableMoves.push([this.x, this.y]);
+		return this.availableMoves;
     }
 
     rookHelper(blocked, squares1) {
@@ -510,7 +547,7 @@ function findClickedSquareIndices(currentX, currentY) {
 
 //GAME INITIALIZATION/////////////////////////////////
 function drawBoard() {
-	context.fillStyle = "#252525";
+	context.fillStyle = "#555";
 	context.fillRect(0, 0, BOARD_WIDTH, BOARD_WIDTH);
 	context.fillStyle = '#fff';
 	for(i = 0; i < 4; i++) {
@@ -563,7 +600,7 @@ function initializeSquares() {
 	let squares = [[], [], [], [], [], [], [], []];
 	squares.forEach(subArray => {
 		for (var i = 0; i < 8; i++) {
-			subArray.push(new Square(squares.indexOf(subArray), i));
+			subArray.push(new Square());
 		}
 	});
 	return squares;
