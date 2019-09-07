@@ -59,13 +59,133 @@ class Piece {
 }
 
 class Square {
-	constructor() {
+	constructor(x, y) {
 		this.piece = null;
+		this.x = x;
+		this.y = y;
 	}
 	isOccupied() {
 		return this.piece != null;
 	}
-	
+	isThreatened(team) {
+		let adjacentSquares = [
+			[this.x, this.y - 1],
+			[this.x + 1, this.y - 1],
+			[this.x + 1, this.y],
+			[this.x + 1, this.y + 1],
+			[this.x, this.y + 1],
+			[this.x - 1, this.y + 1],
+			[this.x - 1, this.y],
+			[this.x - 1, this.y - 1],
+		];
+		let adjacentEnemy = false;
+		adjacentSquares.forEach(square => {
+			if(square[0] < 8 && square[0] > -1 && square[1] < 8 && square[1] > -1) {	
+				if(squares[square[0]][square[1]].isOccupied()){
+					if(squares[square[0]][square[1]].piece.type === 'king' && squares[square[0]][square[1]].piece.team != team) {
+						console.log('Enemy King');
+						adjacentEnemy = true;
+						return;
+					} else if(squares[square[0]][square[1]].piece.type === 'pawn' && squares[square[0]][square[1]].piece.team != team) {
+						console.log('Enemy pawn');
+						let i = adjacentSquares.indexOf(square);
+						if(team === -1 && (i === 1 || i === 7)) {
+							adjacentEnemy = true;
+							return;
+						} else if(team === 1 && (i === 3 || i === 5)) {
+							adjacentEnemy = true;
+							return;
+						}
+					}
+				}
+			}
+		});
+		let knightSquares = [
+			[this.x + 1, this.y - 2],
+			[this.x + 2, this.y - 1],
+			[this.x + 2, this.y + 1],
+			[this.x + 1, this.y + 2],
+			[this.x - 1, this.y + 2],
+			[this.x - 2, this.y + 1],
+			[this.x - 2, this.y - 1],
+			[this.x - 1, this.y - 2],
+		];
+		knightSquares.forEach(square => {
+			if(square[0] < 8 && square[0] > -1 && square[1] < 8 && square[1] > -1) {	
+				if(squares[square[0]][square[1]].isOccupied()){
+					if(squares[square[0]][square[1]].piece.type === 'knight' && squares[square[0]][square[1]].piece.team != team) {
+						console.log('Enemy Knight');
+						adjacentEnemy = true;
+						return;
+					} 
+				}
+			}
+		});
+		if(adjacentEnemy) {
+			return true;
+		}
+		
+		function checkLane(square, direction, team) {
+			if (square.isOccupied()) {
+				if (direction < 4) {
+					if ((square.piece.type === 'rook' || square.piece.type === 'queen') && square.piece.team != team) {
+						console.log(team);
+						console.log(square.x + ', ' + square.y + ': ' + square.piece.team + square.piece.type);
+						return false;
+					}
+				} else {
+					if ((square.piece.type === 'bishop' || square.piece.type === 'queen') && square.piece.team != team) {
+						console.log(team);
+						console.log('X, ' + square.piece.team + square.piece.type);
+						return false;
+					}
+				}
+				if(square.piece.type != 'king') {
+					return true;
+				}
+			}
+			switch (direction) {
+				case 0:
+				case 4:
+				case 7:
+					if (square.y < 1)
+						return true;
+				case 1:
+				case 4:
+				case 5:
+					if (square.x > 6)
+						return true;
+				case 2:
+				case 5:
+				case 6:
+					if (square.y > 6)
+						return true;
+				case 3:
+				case 6:
+				case 7:
+					if (square.x < 1)
+						return true;
+			}
+			switch (direction) {
+				case 0: return checkLane(squares[square.x][square.y - 1], direction, team);
+				case 1: return checkLane(squares[square.x + 1][square.y], direction, team);
+				case 2: return checkLane(squares[square.x][square.y + 1], direction, team);
+				case 3: return checkLane(squares[square.x - 1][square.y], direction, team);
+				case 4: return checkLane(squares[square.x + 1][square.y - 1], direction, team);
+				case 5: return checkLane(squares[square.x + 1][square.y + 1], direction, team);
+				case 6: return checkLane(squares[square.x - 1][square.y + 1], direction, team);
+				case 7: return checkLane(squares[square.x - 1][square.y - 1], direction, team);
+			}
+		}
+		
+		
+		for (let i = 0; i < 8; i++) {
+			if(!checkLane(squares[this.x][this.y], i, team)) {
+				return true;
+			}
+		}
+		return false;
+	}
 }
 
 
@@ -131,6 +251,34 @@ class King extends Piece{
 		else {
 			super.draw('whiteKing.png');
 		}
+	}
+	findAvailableMoves() {
+		console.log('\n\nchecking for King moves...');
+		this.availableMoves.push([[this.x], [this.y]]);
+		let squaresToCheck = [
+			[this.x, this.y - 1],
+			[this.x + 1, this.y - 1],
+			[this.x + 1, this.y],
+			[this.x + 1, this.y + 1],
+			[this.x, this.y + 1],
+			[this.x - 1, this.y + 1],
+			[this.x - 1, this.y],
+			[this.x - 1, this.y - 1],
+			
+		];
+		squaresToCheck.forEach((square) => {
+			if (square[0] < 0 || square[1] < 0 || square[0] > 7 || square[1] > 7) {
+				console.log('dne');
+				return;
+			}else if (squares[square[0]][square[1]].isOccupied() && squares[square[0]][square[1]].piece.team === this.team) {
+				console.log('full');
+				return;
+			} else if (!squares[square[0]][square[1]].isThreatened(this.team)) {
+				console.log('safe');
+				this.availableMoves.push(square);
+			}
+		});
+		
 	}
 }
 
@@ -476,7 +624,7 @@ function initializeSquares() {
 	let squares = [[], [], [], [], [], [], [], []];
 	squares.forEach(subArray => {
 		for (var i = 0; i < 8; i++) {
-			subArray.push(new Square());
+			subArray.push(new Square(squares.indexOf(subArray), i));
 		}
 	});
 	return squares;
