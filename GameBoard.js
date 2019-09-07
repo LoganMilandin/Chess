@@ -147,8 +147,8 @@ class King extends Piece{
 		squaresToCheck.forEach(square => {
 			if (square[0] > -1 && square[0] < 8 && square[1] > -1 && square[1] < 8) {
 				let mySquare = squares[square[0]][square[1]];
-				if ((mySquare.isOccupied() && mySquare.piece.team != this.team && this.noThreat(square, this.team)) 
-					|| (!mySquare.isOccupied()) && this.noThreat(square, this.team)) {
+				if (this.noThreat(square, this.team) && ((mySquare.isOccupied() && mySquare.piece.team != this.team) 
+					|| (!mySquare.isOccupied()))) {
 					this.availableMoves.push(square);
 				}
 			}
@@ -212,11 +212,12 @@ class King extends Piece{
 	queenThreat(square, team) {
 		return this.threatHelper(square, team, 'queen');
 	}
+	
 	kingThreat(square, team) {
 		let squaresToCheck = [
 			[square[0], square[1] - 1],
 			[square[0] + 1, square[1] - 1],
-			[square[0] + 1, square[1]],
+			[square[0] + 1, square[13]],
 			[square[0] + 1, square[1] + 1],
 			[square[0], square[1] + 1],
 			[square[0] - 1, square[1] + 1],
@@ -244,9 +245,12 @@ class King extends Piece{
 			if (!threat && piece.type == pieceType && piece.team != team) {
 				let coveredSquares = piece.findAvailableMoves();
 				coveredSquares.forEach(coveredSquare => {
-					if (coveredSquare[0] === square[0] && coveredSquare[1] === square[1] &&
-						!squares[coveredSquare[0]][coveredSquare[1]].isOccupied()) {
-						threat = true;
+					if (coveredSquare[0] === square[0] && coveredSquare[1] === square[1]) {
+						if (!squares[coveredSquare[0]][coveredSquare[1]].isOccupied()) {
+							threat = true;
+						} else if (squares[coveredSquare[0]][coveredSquare[1]].piece != pieces[i]) {
+							threat = true;
+						}
 					}
 				})
 			}
