@@ -3,8 +3,9 @@ let canvas = document.getElementById('gameCanvas');
 let context = canvas.getContext('2d');
 const BOARD_WIDTH = canvas.width;
 let squares; //USE [column][row] INDEXING TO ACCESS ARRAY SQUARES
-let pieces;
 let deadPieces = [];
+let pieces;
+let pieceDict; 
 
 //SUPERCLASS DECLARATIONS/////////////////////////
 class Piece {
@@ -65,9 +66,7 @@ class Square {
 	isOccupied() {
 		return this.piece != null;
 	}
-	
 }
-
 
 
 
@@ -97,27 +96,40 @@ class Bishop extends Piece{
             squaresToCheck4.push([this.x + i, this.y - i]);
         }
 
-        this.bishHelper(false, squaresToCheck1);
-        this.bishHelper(false, squaresToCheck2);
-        this.bishHelper(false, squaresToCheck3);
-        this.bishHelper(false, squaresToCheck4);
-        this.availableMoves.push([this.x, this.y]);
+        let seenSquares = [[]];
+		this.availableMoves.push([this.x, this.y])
+        seenSquares = this.bishHelper(squaresToCheck1, seenSquares);
+        seenSquares = this.bishHelper(squaresToCheck2, seenSquares);
+        seenSquares = this.bishHelper(squaresToCheck3, seenSquares);
+        seenSquares = this.bishHelper(squaresToCheck4, seenSquares);
+		return seenSquares;
     }
-    bishHelper(blocked, squares1) {
-        squares1.forEach(square => {
-            if (square[0] > -1 && square[0] < 8 && square[1] > -1 && square[1] < 8 && !blocked) {
-                if (squares[square[0]][square[1]].isOccupied()) {
-                    if (squares[square[0]][square[1]].piece.team != this.team) {
-                        this.availableMoves.push(square);
+    bishHelper(squares1, seenSquares) {
+		let result = seenSquares;
+		let blocked = false;
+		let blockedByKing = false;
+        for (let i = 0; i < squares1.length; i++) {
+			if (squares1[i][0] > -1 && squares1[i][0] < 8 && squares1[i][1] > -1 && squares1[i][1] < 8) {
+                if (squares[squares1[i][0]][squares1[i][1]].isOccupied() && !blocked) {
+                    if (squares[squares1[i][0]][squares1[i][1]].piece.team != this.team) {
+                        this.availableMoves.push(squares1[i]);
                     }
-                    blocked = true;
-                } else {
-                    this.availableMoves.push(square);
-                }
+					result.push(squares1[i]);
+					blocked = true;
+					if (squares[squares1[i][0]][squares1[i][1]].piece.type === 'king' && 
+						squares[squares1[i][0]][squares1[i][1]].piece.team != this.team) {
+							blockedByKing = true;
+					}
+                } else if (!blocked){
+                    this.availableMoves.push(squares1[i]);
+					result.push(squares1[i]);
+                } else if (blockedByKing) {
+					result.push(squares1[i]);
+				}
             }
-        })
+		}
+		return result;
     }
-    
 }
 
 class King extends Piece{
@@ -131,6 +143,131 @@ class King extends Piece{
 		else {
 			super.draw('whiteKing.png');
 		}
+	}
+	findAvailableMoves() {
+		let start = performance.now();
+		this.availableMoves.push([[this.x], [this.y]]);
+		let squaresToCheck = [
+			[this.x, this.y - 1],
+			[this.x + 1, this.y - 1],
+			[this.x + 1, this.y],
+			[this.x + 1, this.y + 1],
+			[this.x, this.y + 1],
+			[this.x - 1, this.y + 1],
+			[this.x - 1, this.y],
+			[this.x - 1, this.y - 1],
+			
+		];
+		squaresToCheck.forEach(square => {
+			if (square[0] > -1 && square[0] < 8 && square[1] > -1 && square[1] < 8) {
+				let mySquare = squares[square[0]][square[1]];
+				if (this.noThreat(square, this.team) && ((mySquare.isOccupied() && mySquare.piece.team != this.team) 
+					|| (!mySquare.isOccupied()))) {
+					this.availableMoves.push(square);
+				}
+			}
+		})
+		let finalTime = performance.now() - start;
+		console.log(finalTime);
+	}
+	noThreat(square, team) {
+		return (!this.pawnThreat(square, team) && !this.rookThreat(square, team) && !this.knightThreat(square, team)
+				&& !this.bishopThreat(square, team) && !this.queenThreat(square, team) && !this.kingThreat(square, team));
+	}
+	pawnThreat(square, team) {
+		if (team === -1) {
+			if (square[0] - 1 > -1 && square[1] - 1 > -1) {
+				let pawnSquare = squares[square[0]-1][square[1]-1];
+				if (pawnSquare.piece != null) {
+					if (pawnSquare.piece.type === "pawn" && pawnSquare.piece.team === 1) {
+						return true;
+					}
+				}
+			}
+			if (square[0] + 1 < 8 && square[1] - 1 > -1) {
+				let pawnSquare = squares[square[0]+1][square[1]-1];
+				if (pawnSquare.piece != null) {
+					if (pawnSquare.piece.type === "pawn" && pawnSquare.piece.team === 1) {
+						return true;
+					}
+				}
+			}
+		} else {
+			if (square[0] - 1 > -1 && square[1] + 1 < 8) {
+				let pawnSquare = squares[square[0]-1][square[1]+1];
+				if (pawnSquare.piece != null) {
+					if (pawnSquare.piece.type === "pawn" && pawnSquare.piece.team === -1) {
+						return true;
+					}
+				}
+			}
+			if (square[0] + 1 < 8 && square[1] + 1 < 8) {
+				let pawnSquare = squares[square[0]+1][square[1]+1];
+				if (pawnSquare.piece != null) {
+					if (pawnSquare.piece.type === "pawn" && pawnSquare.piece.team === -1) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+	
+	rookThreat(square, team) {
+		return this.threatHelper(square, team, 'rook');
+	}
+	
+	knightThreat(square, team) {
+		return this.threatHelper(square, team, 'knight');
+	}
+	
+	bishopThreat(square, team) {
+		return this.threatHelper(square, team, 'bishop');
+	}
+	
+	queenThreat(square, team) {
+		return this.threatHelper(square, team, 'queen');
+	}
+	
+	kingThreat(square, team) {
+		let squaresToCheck = [
+			[square[0], square[1] - 1],
+			[square[0] + 1, square[1] - 1],
+			[square[0] + 1, square[13]],
+			[square[0] + 1, square[1] + 1],
+			[square[0], square[1] + 1],
+			[square[0] - 1, square[1] + 1],
+			[square[0] - 1, square[1]],
+			[square[0] - 1, square[1] - 1],
+		];
+		
+		for(let i = 0; i < squaresToCheck.length; i++) {
+			if (squaresToCheck[i][0] > -1 && squaresToCheck[i][0] < 8 && 
+				squaresToCheck[i][1] > -1 && squaresToCheck[i][1] < 8) {
+				let mySquare = squares[squaresToCheck[i][0]][squaresToCheck[i][1]];
+				if (mySquare.isOccupied()) {
+					if (mySquare.piece.type === 'king' && mySquare.piece.team != team) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+	
+	threatHelper(square, team, pieceType) {
+		let threat = false;
+		pieces.forEach(piece => {
+			if (!threat && piece.type === pieceType && piece.team != team) {
+				let coveredSquares = piece.findAvailableMoves();
+				coveredSquares.forEach(coveredSquare => {
+					if (coveredSquare[0] === square[0] && coveredSquare[1] === square[1]) {
+						threat = true;
+					}
+				})
+			}
+		})
+		return threat;
 	}
 }
 
@@ -148,19 +285,21 @@ class Knight extends Piece{
 							  [this.x - 1, this.y + 2],
 							  [this.x - 1, this.y - 2]
 		];
+		let seenSquares = [];
 		squaresToCheck.forEach(square => {
 			if (square[0] > -1 && square[0] < 8 && square[1] > -1 && square[1] < 8) {
 				if (squares[square[0]][square[1]].isOccupied()) {
-
 					if (squares[square[0]][square[1]].piece.team != this.team) {
 						this.availableMoves.push(square);
 					}
 				} else {
 					this.availableMoves.push(square);
 				}
+				seenSquares.push(square);
 			}
 		})
 		this.availableMoves.push([this.x, this.y]);
+		return seenSquares;
 	}
 	draw() {
 		if (this.team == 1) {
@@ -251,30 +390,43 @@ class Queen extends Piece {
             squaresToCheck8.push([this.x, this.y - i]);
 
         }
-
-        this.queenHelper(false, squaresToCheck1);
-        this.queenHelper(false, squaresToCheck2);
-        this.queenHelper(false, squaresToCheck3);
-        this.queenHelper(false, squaresToCheck4);
-        this.queenHelper(false, squaresToCheck5);
-        this.queenHelper(false, squaresToCheck6);
-        this.queenHelper(false, squaresToCheck7);
-        this.queenHelper(false, squaresToCheck8);
-        this.availableMoves.push([this.x, this.y]);
+		let seenSquares = [[]];
+		this.availableMoves.push([this.x, this.y])
+        seenSquares = this.queenHelper(squaresToCheck1, seenSquares);
+        seenSquares = this.queenHelper(squaresToCheck2, seenSquares);
+        seenSquares = this.queenHelper(squaresToCheck3, seenSquares);
+        seenSquares = this.queenHelper(squaresToCheck4, seenSquares);
+        seenSquares = this.queenHelper(squaresToCheck5, seenSquares);
+        seenSquares = this.queenHelper(squaresToCheck6, seenSquares);
+        seenSquares = this.queenHelper(squaresToCheck7, seenSquares);
+        seenSquares = this.queenHelper(squaresToCheck8, seenSquares);
+		return seenSquares;
     }
-    queenHelper(blocked, squares1) {
-        squares1.forEach(square => {
-            if (square[0] > -1 && square[0] < 8 && square[1] > -1 && square[1] < 8 && !blocked) {
-                if (squares[square[0]][square[1]].isOccupied()) {
-                    if (squares[square[0]][square[1]].piece.team != this.team) {
-                        this.availableMoves.push(square);
+    queenHelper(squares1, seenSquares) {
+		let result = seenSquares;
+		let blocked = false;
+		let blockedByKing = false;
+        for (let i = 0; i < squares1.length; i++) {
+			if (squares1[i][0] > -1 && squares1[i][0] < 8 && squares1[i][1] > -1 && squares1[i][1] < 8) {
+                if (squares[squares1[i][0]][squares1[i][1]].isOccupied() && !blocked) {
+                    if (squares[squares1[i][0]][squares1[i][1]].piece.team != this.team) {
+                        this.availableMoves.push(squares1[i]);
                     }
-                    blocked = true;
-                } else {
-                    this.availableMoves.push(square);
-                }
+					result.push(squares1[i]);
+					blocked = true;
+					if (squares[squares1[i][0]][squares1[i][1]].piece.type === 'king' && 
+						squares[squares1[i][0]][squares1[i][1]].piece.team != this.team) {
+							blockedByKing = true;
+					}
+                } else if (!blocked){
+                    this.availableMoves.push(squares1[i]);
+					result.push(squares1[i]);
+                } else if (blockedByKing) {
+					result.push(squares1[i]);
+				}
             }
-        })
+		}
+		return result;
     }
 	
 }
@@ -303,26 +455,40 @@ class Rook extends Piece{
             squaresToCheck4.push([this.x, this.y - i]);
         }
 
-        this.rookHelper(false, squaresToCheck1);
-        this.rookHelper(false, squaresToCheck2);
-        this.rookHelper(false, squaresToCheck3);
-        this.rookHelper(false, squaresToCheck4);
-        this.availableMoves.push([this.x, this.y]);
+        let seenSquares = [];
+		this.availableMoves.push([this.x, this.y])
+        seenSquares = this.rookHelper(squaresToCheck1, seenSquares);
+        seenSquares = this.rookHelper(squaresToCheck2, seenSquares);
+        seenSquares = this.rookHelper(squaresToCheck3, seenSquares);
+        seenSquares = this.rookHelper(squaresToCheck4, seenSquares);
+		return seenSquares;
     }
 
-    rookHelper(blocked, squares1) {
-        squares1.forEach(square => {
-            if (square[0] > -1 && square[0] < 8 && square[1] > -1 && square[1] < 8 && !blocked) {
-                if (squares[square[0]][square[1]].isOccupied()) {
-                    if (squares[square[0]][square[1]].piece.team != this.team) {
-                        this.availableMoves.push(square);
+    rookHelper(squares1, seenSquares) {
+		let result = seenSquares;
+		let blocked = false;
+		let blockedByKing = false;
+        for (let i = 0; i < squares1.length; i++) {
+			if (squares1[i][0] > -1 && squares1[i][0] < 8 && squares1[i][1] > -1 && squares1[i][1] < 8) {
+                if (squares[squares1[i][0]][squares1[i][1]].isOccupied() && !blocked) {
+                    if (squares[squares1[i][0]][squares1[i][1]].piece.team != this.team) {
+                        this.availableMoves.push(squares1[i]);
                     }
-                    blocked = true;
-                } else {
-                    this.availableMoves.push(square);
-                }
+					result.push(squares1[i]);
+					blocked = true;
+					if (squares[squares1[i][0]][squares1[i][1]].piece.type === 'king' && 
+						squares[squares1[i][0]][squares1[i][1]].piece.team != this.team) {
+							blockedByKing = true;
+					}
+                } else if (!blocked){
+                    this.availableMoves.push(squares1[i]);
+					result.push(squares1[i]);
+                } else if (blockedByKing) {
+					result.push(squares1[i]);
+				}
             }
-        })
+		}
+		return result;
     }
 	
 }
@@ -423,7 +589,7 @@ function findClickedSquareIndices(currentX, currentY) {
 
 //GAME INITIALIZATION/////////////////////////////////
 function drawBoard() {
-	context.fillStyle = "#252525";
+	context.fillStyle = "#555";
 	context.fillRect(0, 0, BOARD_WIDTH, BOARD_WIDTH);
 	context.fillStyle = '#fff';
 	for(i = 0; i < 4; i++) {
