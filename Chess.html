@@ -11,6 +11,23 @@
 <body>
 	<!-- removed canvasWrapper -->
 	<canvas id = "gameCanvas" width = "500" height = "500"></canvas>
+	
+	<div id = "whitePromotion">
+		select piece:
+		<img class = "menuPieces" src = "whiteRook.png" height = "15%" width = "60%" style = "margin-top: 1vh;" onclick = "promotePiece(-1, 'rook');">
+		<img class = "menuPieces" src = "whiteKnight.png" height = "15%" width = "60%" onclick = "promotePiece(-1, 'knight');">
+		<img class = "menuPieces" src = "whiteBishop.png" height = "15%" width = "60%" onclick = "promotePiece(-1, 'bishop');">
+		<img class = "menuPieces" src = "whiteQueen.png" height = "15%" width = "60%" onclick = "promotePiece(-1, 'queen');">
+		<img class = "menuPieces" src = "whitePawn.png" height = "15%" width = "60%" onclick = "promotePiece(-1, 'pawn');">
+	</div>
+	<div id = "blackPromotion">
+		select piece:
+		<img class = "menuPieces" src = "blackRook.png" height = "15%" width = "60%" style = "margin-top: 1vh;" onclick = "promotePiece(1, 'rook');">
+		<img class = "menuPieces" src = "blackKnight.png" height = "15%" width = "60%" onclick = "promotePiece(1, 'knight');">
+		<img class = "menuPieces" src = "blackBishop.png" height = "15%" width = "60%" onclick = "promotePiece(1, 'bishop');">
+		<img class = "menuPieces" src = "blackQueen.png" height = "15%" width = "60%" onclick = "promotePiece(1, 'queen');">
+		<img class = "menuPieces" src = "blackPawn.png" height = "15%" width = "60%" onclick = "promotePiece(1, 'pawn');">
+	</div>
 	<script type = "text/javascript" src = "jqueryScript.js">
 	</script>
 	<script type = "text/javascript" src = "GameBoard.js">

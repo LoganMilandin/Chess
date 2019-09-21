@@ -1,13 +1,15 @@
 //////GLOBAL VARIABLE DECLARATIONS/////////////////////
-let canvas = document.getElementById('gameCanvas');
-let context = canvas.getContext('2d');
+var canvas = document.getElementById('gameCanvas');
+var context = canvas.getContext('2d');
 const BOARD_WIDTH = canvas.width;
-let squares; //USE [column][row] INDEXING TO ACCESS ARRAY SQUARES
-let deadPieces = [];
-let pieces;
-let pieceDict; 
-let boardSquares;
-let turn = -1;
+var squares; //USE [column][row] INDEXING TO ACCESS ARRAY SQUARES
+var deadPieces = [];
+var pieces;
+var pieceDict; 
+var isPromoting = false;
+var promotingPiece = null;
+var whitePromoMenu = document.getElementById('whitePromotion');
+var blackPromoMenu = document.getElementById('blackPromotion');
 
 //SUPERCLASS DECLARATIONS/////////////////////////
 class Piece {
@@ -21,10 +23,6 @@ class Piece {
 		this.team = team;
 		this.isClicked = false;
 		this.availableMoves = [];
-		this.boardSquares = {};
-	}
-	canMove() {
-		return (this.team === turn);
 	}
 	canMoveTo(x, y) {
 		var canMoveTo = false;
@@ -101,6 +99,7 @@ class Bishop extends Piece{
             squaresToCheck3.push([this.x - i, this.y + i]);
             squaresToCheck4.push([this.x + i, this.y - i]);
         }
+
         let seenSquares = [[]];
 		this.availableMoves.push([this.x, this.y])
         seenSquares = this.bishHelper(squaresToCheck1, seenSquares);
@@ -140,7 +139,6 @@ class Bishop extends Piece{
 class King extends Piece{
 	constructor(x, y, team, type) {
 		super(x, y, team, type);
-		this.canCastle = true;
 	}
 	draw() {
 		if (this.team == 1) {
@@ -174,7 +172,7 @@ class King extends Piece{
 			}
 		})
 		let finalTime = performance.now() - start;
-		console.log(finalTime);
+		//console.log(finalTime);
 	}
 	noThreat(square, team) {
 		return (!this.pawnThreat(square, team) && !this.rookThreat(square, team) && !this.knightThreat(square, team)
@@ -347,7 +345,7 @@ class Pawn extends Piece{
 	findAvailableMoves() {
 		this.findAvailableAttacks();
 		//if the square directly in front of the pawn is clear
-		if (squares[this.x][this.y + this.team].piece == null) {
+		if (this.y > 0 && this.y < 7 && squares[this.x][this.y + this.team].piece == null) {
 			this.availableMoves.push([this.x, this.y + this.team]);
 			if (!this.hasMoved && squares[this.x][this.y + 2 * this.team].piece == null) {
 				this.availableMoves.push([this.x, this.y + 2 * this.team]);
@@ -499,19 +497,12 @@ class Rook extends Piece{
 	
 }
 
-/////DICTIONARY EXPERIMENTATION ///////////////////////
-function makeDict() {
-	 var boardSquares = {};
-	this.boardSquares[squares[0][0]] = 0;
-}
-
 
 
 
 
 
 /////CLICK AND DRAG IMPLEMENTATION////////////////////////////////////////////////////
-var prevSquare = null;
 var mouse = {
 		x: undefined,
 		y: undefined,
@@ -527,8 +518,10 @@ canvas.addEventListener('click', event => {
 	currentX = mouse.x;
 	currentY = mouse.y;
 	var indices = findClickedSquareIndices(currentX, currentY);
+	console.log(indices);
 	var clickedSquare = squares[indices[0]][indices[1]];
-	if (mouse.hasPiece) {
+	if (mouse.hasPiece && !isPromoting) {
+		console.log("hi");
 		if ((clickedSquare.piece == null || clickedSquare.piece.team != mouse.piece.team) && mouse.piece.canMoveTo(indices[0], indices[1])) {
 			if (indices[0] == mouse.piece.startingX && indices[1] == mouse.piece.startingY && mouse.piece.hasMoved == false) {
 				mouse.piece.hasMoved = false;
@@ -546,34 +539,70 @@ canvas.addEventListener('click', event => {
 			clickedSquare.piece.availableMoves = [];
 			mouse.piece = null;
 			mouse.hasPiece = false;
-		}
-		if (clickedSquare === prevSquare) {
-			if (turn === -1) {
-				turn = 1;
-			} else {
-				turn = -1;
+			//PIECE PROMOTING
+			
+			//
+			if (indices[1] == 0 && clickedSquare.piece.type == 'pawn' && clickedSquare.piece.hasMoved) {
+				whitePromoMenu.style.display = "inline";
+				isPromoting = true;
+				promotingPiece = clickedSquare.piece;
+				//console.log(whitePromoMenu.style.display);
+			}
+			if (indices[1] == 7 && clickedSquare.piece.type == 'pawn' && clickedSquare.piece.hasMoved) {
+				blackPromoMenu.style.display = "inline";
+				isPromoting = true;
+				promotingPiece = clickedSquare.piece;
+				//console.log(whitePromoMenu.style.display);
 			}
 		}
 	}
-	else {
-		if (clickedSquare.piece != null && clickedSquare.piece.canMove()) {
+	else if (!mouse.hasPiece && !isPromoting){
+		if (clickedSquare.piece != null) {
 			clickedSquare.piece.isClicked = true;
+			console.log(clickedSquare.piece);
 			clickedSquare.piece.findAvailableMoves();
 			mouse.piece = clickedSquare.piece;
 			mouse.hasPiece = true;
 			clickedSquare.piece = null;
-			if (turn === -1) {
-				turn = 1;
-			} else {
-				turn = -1;
-			}
-			prevSquare = clickedSquare;
-		}	
+		}
+		
+	}
+	else if (isPromoting) {
+		
 	}
 	
-	
-
 })
+function promotePiece(team, type) {
+	
+	let promoteTo;
+	
+	switch(type) {
+		case 'rook':
+			promoteTo = new Rook(promotingPiece.x, promotingPiece.y, team, type);
+			break;
+		case 'knight':
+			promoteTo = new Knight(promotingPiece.x, promotingPiece.y, team, type);
+			break;
+		case 'bishop':
+			promoteTo = new Bishop(promotingPiece.x, promotingPiece.y, team, type);
+			break;
+		case 'queen':
+			promoteTo = new Queen(promotingPiece.x, promotingPiece.y, team, type);
+			break;
+		case 'pawn':
+			promoteTo = new Pawn(promotingPiece.x, promotingPiece.y, team, type);
+			break;
+	}
+
+	pieces.push(promoteTo);
+	pieces.splice(pieces.indexOf(promotingPiece), 1);
+	squares[promotingPiece.x][promotingPiece.y].piece = promoteTo;
+	isPromoting = false;
+	promotingPiece = null;
+	whitePromoMenu.style.display = 'none';
+	blackPromoMenu.style.display = 'none';
+	
+}
 function findClickedSquareIndices(currentX, currentY) {
 	var middleX = window.innerWidth / 2;
 	var middleY = window.innerHeight / 2;
