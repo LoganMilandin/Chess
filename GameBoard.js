@@ -6,6 +6,8 @@ let squares; //USE [column][row] INDEXING TO ACCESS ARRAY SQUARES
 let deadPieces = [];
 let pieces;
 let pieceDict; 
+let boardSquares;
+let turn = -1;
 
 //SUPERCLASS DECLARATIONS/////////////////////////
 class Piece {
@@ -19,6 +21,10 @@ class Piece {
 		this.team = team;
 		this.isClicked = false;
 		this.availableMoves = [];
+		this.boardSquares = {};
+	}
+	canMove() {
+		return (this.team === turn);
 	}
 	canMoveTo(x, y) {
 		var canMoveTo = false;
@@ -95,7 +101,6 @@ class Bishop extends Piece{
             squaresToCheck3.push([this.x - i, this.y + i]);
             squaresToCheck4.push([this.x + i, this.y - i]);
         }
-
         let seenSquares = [[]];
 		this.availableMoves.push([this.x, this.y])
         seenSquares = this.bishHelper(squaresToCheck1, seenSquares);
@@ -135,6 +140,7 @@ class Bishop extends Piece{
 class King extends Piece{
 	constructor(x, y, team, type) {
 		super(x, y, team, type);
+		this.canCastle = true;
 	}
 	draw() {
 		if (this.team == 1) {
@@ -493,12 +499,19 @@ class Rook extends Piece{
 	
 }
 
+/////DICTIONARY EXPERIMENTATION ///////////////////////
+function makeDict() {
+	 var boardSquares = {};
+	this.boardSquares[squares[0][0]] = 0;
+}
+
 
 
 
 
 
 /////CLICK AND DRAG IMPLEMENTATION////////////////////////////////////////////////////
+var prevSquare = null;
 var mouse = {
 		x: undefined,
 		y: undefined,
@@ -534,18 +547,29 @@ canvas.addEventListener('click', event => {
 			mouse.piece = null;
 			mouse.hasPiece = false;
 		}
+		if (clickedSquare === prevSquare) {
+			if (turn === -1) {
+				turn = 1;
+			} else {
+				turn = -1;
+			}
+		}
 	}
 	else {
-		if (clickedSquare.piece != null) {
+		if (clickedSquare.piece != null && clickedSquare.piece.canMove()) {
 			clickedSquare.piece.isClicked = true;
 			clickedSquare.piece.findAvailableMoves();
 			mouse.piece = clickedSquare.piece;
 			mouse.hasPiece = true;
 			clickedSquare.piece = null;
-		}
-		
+			if (turn === -1) {
+				turn = 1;
+			} else {
+				turn = -1;
+			}
+			prevSquare = clickedSquare;
+		}	
 	}
-	
 	
 	
 
