@@ -1,13 +1,17 @@
 //////GLOBAL VARIABLE DECLARATIONS/////////////////////
-let canvas = document.getElementById('gameCanvas');
-let context = canvas.getContext('2d');
+var canvas = document.getElementById('gameCanvas');
+var context = canvas.getContext('2d');
 const BOARD_WIDTH = canvas.width;
-let squares; //USE [column][row] INDEXING TO ACCESS ARRAY SQUARES
-let deadPieces = [];
-let pieces;
-let pieceDict; 
-let boardSquares;
-let turn = -1;
+var squares; //USE [column][row] INDEXING TO ACCESS ARRAY SQUARES
+var deadPieces = [];
+var pieces;
+var pieceDict; 
+var boardSquares;
+var turn = -1;
+var isPromoting = false;
+var promotingPiece = null;
+var whitePromoMenu = document.getElementById('whitePromotion');
+var blackPromoMenu = document.getElementById('blackPromotion');
 
 //SUPERCLASS DECLARATIONS/////////////////////////
 class Piece {
@@ -347,7 +351,7 @@ class Pawn extends Piece{
 	findAvailableMoves() {
 		this.findAvailableAttacks();
 		//if the square directly in front of the pawn is clear
-		if (squares[this.x][this.y + this.team].piece == null) {
+		if (this.y > 0 && this.y < 7 && squares[this.x][this.y + this.team].piece == null) {
 			this.availableMoves.push([this.x, this.y + this.team]);
 			if (!this.hasMoved && squares[this.x][this.y + 2 * this.team].piece == null) {
 				this.availableMoves.push([this.x, this.y + 2 * this.team]);
@@ -528,7 +532,7 @@ canvas.addEventListener('click', event => {
 	currentY = mouse.y;
 	var indices = findClickedSquareIndices(currentX, currentY);
 	var clickedSquare = squares[indices[0]][indices[1]];
-	if (mouse.hasPiece) {
+	if (mouse.hasPiece && !isPromoting) {
 		if ((clickedSquare.piece == null || clickedSquare.piece.team != mouse.piece.team) && mouse.piece.canMoveTo(indices[0], indices[1])) {
 			if (indices[0] == mouse.piece.startingX && indices[1] == mouse.piece.startingY && mouse.piece.hasMoved == false) {
 				mouse.piece.hasMoved = false;
@@ -546,6 +550,19 @@ canvas.addEventListener('click', event => {
 			clickedSquare.piece.availableMoves = [];
 			mouse.piece = null;
 			mouse.hasPiece = false;
+			if (indices[1] == 0 && clickedSquare.piece.type == 'pawn' && clickedSquare.piece.hasMoved) {
+				whitePromoMenu.style.display = "inline";
+				isPromoting = true;
+				promotingPiece = clickedSquare.piece;
+				//console.log(whitePromoMenu.style.display);
+			}
+			if (indices[1] == 7 && clickedSquare.piece.type == 'pawn' && clickedSquare.piece.hasMoved) {
+				blackPromoMenu.style.display = "inline";
+				isPromoting = true;
+				promotingPiece = clickedSquare.piece;
+				//console.log(whitePromoMenu.style.display);
+			}
+			
 		}
 		if (clickedSquare === prevSquare) {
 			if (turn === -1) {
@@ -555,8 +572,7 @@ canvas.addEventListener('click', event => {
 			}
 		}
 	}
-	else {
-		if (clickedSquare.piece != null && clickedSquare.piece.canMove()) {
+	else if (!mouse.hasPiece && !isPromoting && clickedSquare.piece != null && clickedSquare.piece.canMove()) {
 			clickedSquare.piece.isClicked = true;
 			clickedSquare.piece.findAvailableMoves();
 			mouse.piece = clickedSquare.piece;
@@ -568,12 +584,44 @@ canvas.addEventListener('click', event => {
 				turn = -1;
 			}
 			prevSquare = clickedSquare;
-		}	
 	}
-	
-	
+	else if (!isPromoting) {
+		
+	}
 
 })
+
+function promotePiece(team, type) {
+	
+	let promoteTo;
+	
+	switch(type) {
+		case 'rook':
+			promoteTo = new Rook(promotingPiece.x, promotingPiece.y, team, type);
+			break;
+		case 'knight':
+			promoteTo = new Knight(promotingPiece.x, promotingPiece.y, team, type);
+			break;
+		case 'bishop':
+			promoteTo = new Bishop(promotingPiece.x, promotingPiece.y, team, type);
+			break;
+		case 'queen':
+			promoteTo = new Queen(promotingPiece.x, promotingPiece.y, team, type);
+			break;
+		case 'pawn':
+			promoteTo = new Pawn(promotingPiece.x, promotingPiece.y, team, type);
+			break;
+	}
+
+	pieces.push(promoteTo);
+	pieces.splice(pieces.indexOf(promotingPiece), 1);
+	squares[promotingPiece.x][promotingPiece.y].piece = promoteTo;
+	isPromoting = false;
+	promotingPiece = null;
+	whitePromoMenu.style.display = 'none';
+	blackPromoMenu.style.display = 'none';
+	
+}
 function findClickedSquareIndices(currentX, currentY) {
 	var middleX = window.innerWidth / 2;
 	var middleY = window.innerHeight / 2;
